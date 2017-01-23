@@ -18,8 +18,12 @@ module.exports = {
 var consumers = [];
 
 function start() {
-  debug('Starting feedback consumers');
-  setupConsumers();
+  if (!consumers.length) {
+    debug('Starting feedback consumers');
+    setupConsumers();
+  } else {
+    debug('Consumers already started, ignoring start call');
+  }
 }
 
 function stop() {
