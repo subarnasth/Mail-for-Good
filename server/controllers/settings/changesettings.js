@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const Setting = require('../../models').setting;
 
-module.exports = function(req, res) {
+module.exports = function(req, res, redis) {
   const settingsToChange = _.pickBy(req.body);
 
   // Exit if there are no settings to change
@@ -57,7 +57,9 @@ module.exports = function(req, res) {
     }
   }).then(() => {
     res.send();
-  }).catch(() => {
+    redis.publisher.publish('change-settings', 'changed');
+  }).catch(err => {
+    throw err;
     res.status(500).send();
   });
 };
