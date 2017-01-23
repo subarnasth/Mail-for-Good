@@ -1,4 +1,3 @@
-require('dotenv').config();
 const debug = require('debug')('server:feedback-consumer:consumer');
 const AWS = require('aws-sdk');
 const Consumer = require('sqs-consumer');
@@ -12,7 +11,8 @@ const {
 
 module.exports = {
   start,
-  stop
+  stop,
+  restart
 }
 
 var consumers = [];
@@ -28,6 +28,11 @@ function stop() {
     consumer.stop();
   });
   consumers = [];
+}
+
+function restart() {
+  stop();
+  start();
 }
 
 function setupConsumers() {
