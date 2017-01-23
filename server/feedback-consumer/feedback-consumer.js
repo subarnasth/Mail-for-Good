@@ -1,31 +1,49 @@
+require('dotenv').config();
+const debug = require('debug')('server:feedback-consumer:consumer');
 const AWS = require('aws-sdk');
 const Consumer = require('sqs-consumer');
-require('dotenv').config();
 const {
   sequelize,
   setting: Settings,
   campaignsubscriber: CampaignSubscriber,
   campaignanalytics: CampaignAnalytics,
   listsubscriber: ListSubscriber
-} = require('./models');
+} = require('./../models/index');
 
-start();
+module.exports = {
+  start,
+  stop
+}
+
+var consumers = [];
 
 function start() {
+  debug('Starting feedback consumers');
   setupConsumers();
 }
 
+function stop() {
+  debug('Stopping %d consumers', consumers.length);
+  consumers.forEach(consumer => {
+    consumer.stop();
+  });
+  consumers = [];
+}
+
 function setupConsumers() {
-  let consumers = [];
+  consumers = [];
 
   Settings.findAll({  // (might be safer to find settings through user join)
     // Add settings validation
     raw: true
   }).then(settings => {
+    debug('Found %d settings', settings.length);
     settings.forEach(setting => {
+      debug('Initialising a consumer using AWS access key: %s with the queue URL:  %s', setting.amazonSimpleEmailServiceAccessKey, setting.amazonSimpleQueueServiceUrl);
       consumers.push(createConsumer(setting.region, setting.amazonSimpleEmailServiceAccessKey, setting.amazonSimpleEmailServiceSecretKey, setting.amazonSimpleQueueServiceUrl));
     });
 
+    debug('Starting %d consumers', consumers.length);
     consumers.forEach(consumer => {
       consumer.start();
     });
@@ -47,6 +65,7 @@ function createConsumer(region, accessKeyId, secretAccessKey, queueUrl) {
 function receiveMessageCallback(message, done) {
   // Perform overly complicated parsing of an SES feedback notification/message
   // and save the results to the database
+  debug('Processing a feedback notification: %O', message);
 
   // Extract the SES email feedback notification
   // See example data structure: https://docs.aws.amazon.com/ses/latest/DeveloperGuide/notification-examples.html

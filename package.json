@@ -25,7 +25,7 @@
     "build": "babel-node tools/build.js",
     "test:server": "node tools/simulator/ses-simulator.js",
     "simulator:start": "node tools/simulator/ses-simulator.js",
-    "analytics": "NODE_ENV=production node server/analytics-consumer.js"
+    "feedback": "NODE_ENV=production node server/feedback-consumer/index.js"
   },
   "repository": {
     "type": "git",
