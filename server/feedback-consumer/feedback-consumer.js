@@ -47,12 +47,20 @@ function setupConsumers() {
     debug('Found %d settings', settings.length);
     settings.forEach(setting => {
       debug('Initialising a consumer using AWS access key: %s with the queue URL:  %s', setting.amazonSimpleEmailServiceAccessKey, setting.amazonSimpleQueueServiceUrl);
-      consumers.push(createConsumer(setting.region, setting.amazonSimpleEmailServiceAccessKey, setting.amazonSimpleEmailServiceSecretKey, setting.amazonSimpleQueueServiceUrl));
+      try {
+        consumers.push(createConsumer(setting.region, setting.amazonSimpleEmailServiceAccessKey, setting.amazonSimpleEmailServiceSecretKey, setting.amazonSimpleQueueServiceUrl));
+      } catch (e) {
+        debug('User with setting id %d has invalid settings, skipping consumer creation. Error: %o', setting.id, e);
+      }
     });
 
     debug('Starting %d consumers', consumers.length);
     consumers.forEach(consumer => {
       consumer.start();
+
+      consumer.on('error', err => {
+        debug('Error event: %s', err.message);
+      });
     });
   }).catch(err => {
     throw err;
