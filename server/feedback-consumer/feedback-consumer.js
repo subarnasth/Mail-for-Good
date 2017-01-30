@@ -42,9 +42,7 @@ function restart() {
 function setupConsumers() {
   consumers = [];
 
-  Settings.findAll({  // (might be safer to find settings through user join)
-    // Add settings validation
-    raw: true
+  Settings.findAll({
   }).then(settings => {
     debug('Found %d settings', settings.length);
     settings.forEach(setting => {
