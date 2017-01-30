@@ -39,9 +39,17 @@ function restart() {
   start();
 }
 
+let lock = false;
 function setupConsumers() {
   consumers = [];
 
+  // Hacky way of stopping calls during the Settings.findAll query
+  // to prevent duplicate consumers from being produced.
+  if (lock) {
+    return;
+  }
+
+  lock = true;
   Settings.findAll({
   }).then(settings => {
     debug('Found %d settings', settings.length);
@@ -57,11 +65,11 @@ function setupConsumers() {
     debug('Starting %d consumers', consumers.length);
     consumers.forEach(consumer => {
       consumer.start();
-
       consumer.on('error', err => {
         debug('Error event: %s', err.message);
       });
     });
+    lock = false;
   }).catch(err => {
     throw err;
   });

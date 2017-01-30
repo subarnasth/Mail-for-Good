@@ -1,6 +1,8 @@
 require('dotenv').config();
 const debug = require('debug')('server:feedback-consumer:index');
 const redis = require('redis');
+const async = require('async');
+
 const feedbackConsumer = require('./feedback-consumer');
 const Campaign = require('../models').campaign;
 
@@ -14,7 +16,7 @@ feedbackConsumer.start();
 const subscriber = redis.createClient();
 subscriber.on('message', (channel, event) => {
   if (event == 'changed' && !isSending) {
-    debug('Got a change-settings event, so restarting consumers to apply new credentials')
+    debug('Got a change-settings event, so restarting consumers to apply new credentials');
     feedbackConsumer.restart();
   }
 });
@@ -26,20 +28,21 @@ subscriber.subscribe('change-settings');
 // and prevent race conditions caused by receiving a feedback message
 // before the messageId has been stored.
 const pollingRateMs = 10000;
-setInterval(() => {
-  Campaign.count({
-    where: { status: 'sending' }
-  }).then(numSending => {
-    if (numSending) {
-      debug('%d campaigns are being sent, stopping feedback consumer', numSending);
-      isSending = true;
-      feedbackConsumer.stop();
-    } else {
-      debug('No campaigns are being sent, restarting feedback consumer')
-      isSending = false;
-      feedbackConsumer.start();
-    }
-  }).catch(err => {
-    throw err;
-  });
-}, pollingRateMs);
+async.forever(next => {
+    Campaign.count({
+      where: { status: 'sending' }
+    }).then(numSending => {
+      if (numSending) {
+        debug('%d campaigns are being sent, stopping feedback consumer', numSending);
+        isSending = true;
+        feedbackConsumer.stop();
+      } else {
+        debug('No campaigns are being sent, restarting feedback consumer');
+        isSending = false;
+        feedbackConsumer.restart();
+      }
+      setTimeout(next, pollingRateMs);
+    }).catch(err => {
+      throw err;
+    });
+});
