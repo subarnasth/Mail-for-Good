@@ -1,6 +1,7 @@
 app:
     image: 4iar/mail-for-good:latest
     env_file: .env
+    restart: always
     environment:
         - PSQL_USERNAME=postgres
         - PSQL_DATABASE=postgres

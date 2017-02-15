@@ -43,13 +43,21 @@ app.use('/dist', express.static(path.join(__dirname, '../dist')));
 routes(app, passport, io, { client, subscriber, publisher });
 
 // Start the server after correcting the database state
-restoreDbState().then(() => {
-  const port = process.env.PORT || 8080;
-  server.listen(port, function() {
-    console.log(`Email service live on port ${port}`); // eslint-disable-line
-  });
+restoreDbState().
+    then(() => {
+        const port = process.env.PORT || 8080;
+        server.listen(port, function() {
+            console.log(`Email service live on port ${port}`); // eslint-disable-line
+        });
 
-  server.on('error', err => {
-    console.log(err);
-  });
-});
+        server.on('error', err => {
+            console.log(err);
+        });
+    }).catch(err => {
+        console.log(err);
+
+        // Exit if we cannot connect to postgresql
+        if (err.parent.code == 'ECONNREFUSED') {
+            process.exit(1);
+        }
+    });
